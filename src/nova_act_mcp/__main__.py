@@ -1,5 +1,3 @@
-import sys
+from nova_act_mcp import main
 
-from .server import main
-
-sys.exit(main())
+main()

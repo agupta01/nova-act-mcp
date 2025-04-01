@@ -2,3 +2,5 @@
 .venv
 __pycache__
 SBOM.json
+dist/
+.ruff_cache
