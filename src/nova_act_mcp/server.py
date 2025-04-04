@@ -1,46 +1,51 @@
+import asyncio
 import logging
+from concurrent.futures import ThreadPoolExecutor
+
 import mcp.types as types
 from mcp.server.lowlevel import Server
 from mcp.server.stdio import stdio_server
 from nova_act import NovaAct
 
-# from pydantic import BaseModel
+
+async def use_nova_act(url: str, actions: list[str]) -> types.TextContent:
+    # Create a context manager to handle NovaAct lifecycle
+    def run_nova_act():
+        with NovaAct(starting_page=url) as agent:
+            for action in actions:
+                agent.act(action)
+            return agent.page.content()
+
+    # Run the synchronous code in a thread pool
+    loop = asyncio.get_running_loop()
+    with ThreadPoolExecutor() as pool:
+        result = await loop.run_in_executor(pool, run_nova_act)
+
+    return types.TextContent(type="text", text=result)
 
 
-# class NovaActModel(BaseModel):
-#     url: str
-#     actions: list[str]
-
-
-def use_nova_act(url: str, actions: list[str]) -> types.TextContent:
-    with NovaAct(starting_page=url) as agent:
-        for action in actions:
-            agent.act(action)
-        return types.TextContent(type="text", text=agent.page.content())
-
-
-async def serve() -> int:
+async def serve() -> None:
     logger = logging.getLogger(__name__)
 
     server = Server("nova-act-mcp")
 
     @server.call_tool()
-    async def handle_call_tool(name: str, arguments: dict) -> types.TextContent:
+    async def handle_call_tool(name: str, arguments: dict) -> list[types.TextContent]:
         if name != "nova-act":
             raise ValueError(f"Unknown tool: {name}")
         if "url" not in arguments:
             raise ValueError("Missing required argument 'url'")
         if "actions" not in arguments:
             raise ValueError("Missing required argument 'actions'")
-        return use_nova_act(arguments["url"], arguments["actions"])
+        return [await use_nova_act(arguments["url"], arguments["actions"])]
 
     @server.list_tools()
     async def list_tools() -> list[types.Tool]:
         return [
             types.Tool(
                 name="nova-act",
-                description="""Uses Nova Act to perform actions on a website. 
-                
+                description="""Uses Nova Act to perform actions on a website.
+
 For effective browser automation, follow these best practices when creating actions:
 1. Be prescriptive and succinct about UI interactions
 2. Break large tasks into smaller, specific steps
