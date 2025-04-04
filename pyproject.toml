@@ -1,6 +1,6 @@
 [project]
 name = "nova-act-mcp"
-version = "0.1.0"
+version = "0.2.1"
 description = "An MCP Server for Amazon Nova Act"
 readme = "README.md"
 requires-python = ">=3.11"
