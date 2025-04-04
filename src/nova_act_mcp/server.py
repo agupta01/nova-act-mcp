@@ -6,6 +6,13 @@ import mcp.types as types
 from mcp.server.lowlevel import Server
 from mcp.server.stdio import stdio_server
 from nova_act import NovaAct
+from pydantic import BaseModel
+from typing import List
+
+
+class NovaActRequest(BaseModel):
+    url: str
+    actions: List[str]
 
 
 async def use_nova_act(url: str, actions: list[str]) -> types.TextContent:
@@ -64,23 +71,7 @@ Examples of poor actions:
 - "order a matcha set from amazon"
 
 When using this tool, provide a list of specific, step-by-step actions that Nova Act should perform.""",
-                inputSchema={
-                    "type": "object",
-                    "required": ["url", "actions"],
-                    "properties": {
-                        "url": {
-                            "type": "string",
-                            "description": "URL to fetch",
-                        },
-                        "actions": {
-                            "type": "array",
-                            "items": {
-                                "type": "string",
-                            },
-                            "description": "Specific, prescriptive actions to perform. Each action should be a clear instruction that a human could follow.",
-                        },
-                    },
-                },
+                inputSchema=NovaActRequest.model_json_schema(),
             )
         ]
 
